@@ -1,0 +1,5 @@
+REGEDIT4
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\InternetAccessAnalyzer\Parameters]
+"Application"="\"C:\\Program Files (x86)\\Java\\jre7\\bin\\java.exe\" -cp D:\\Workspace\\Java\\internetAccessAnalyzer\\iaa.jar com.service.JobManager"
+"AppDirectory"="\"D:\\Workspace\\Java\\internetAccessAnalyzer\""
