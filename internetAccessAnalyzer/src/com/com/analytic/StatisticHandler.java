@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -39,27 +40,29 @@ public class StatisticHandler {
 
 	private void start() {
 		connection.openEntityManager();
-		DateFormat df = new SimpleDateFormat("dd.MM.yyyy");		
-		Date start = null;
-		Date end = null;
+		DateFormat df = new SimpleDateFormat("dd.MM.yyyy");
+		Date date = null;
+
 		try {
-			start = df.parse("03.07.2014");
-			end = df.parse("04.07.2014");
+			date = df.parse("03.07.2014");
 		} catch (ParseException e) {
-			e.printStackTrace();
-		};
-		
+			log.error("", e);
+		}
+		;
+
 		try {
-			Period period = Period.ALL;
+			Period period = Period.YEAR;
 			switch (period) {
 			case DAY:
+				log.info(getPingDataForDay(date).size());
 				break;
 			case MONTH:
+				log.info(getPingDataForMonth(date).size());
 				break;
 			case YEAR:
+				getPingDataForYear(date);
 				break;
 			case ALL:
-				log.info(String.valueOf(getPingDataInPeriod(start, end).size()));
 				break;
 			}
 		} finally {
@@ -67,6 +70,32 @@ public class StatisticHandler {
 		}
 	}
 
+	private List<PingData> getPingDataForDay(Date day) {
+		Calendar c = Calendar.getInstance();
+		c.setTime(day);
+		c.add(Calendar.DATE, 1);
+		Date nextDay = c.getTime();
+		return getPingDataInPeriod(day, nextDay);
+	}
+
+	private List<PingData> getPingDataForMonth(Date month) {
+		Calendar c = Calendar.getInstance();
+		c.setTime(month);
+		c.add(Calendar.MONTH, 1);
+		Date nextDay = c.getTime();
+		return getPingDataInPeriod(month, nextDay);
+
+	}
+	
+	private List<PingData> getPingDataForYear(Date year) {
+		Calendar c = Calendar.getInstance();
+		c.setTime(year);
+		c.add(Calendar.YEAR, 1);
+		Date nextDay = c.getTime();
+		return getPingDataInPeriod(year, nextDay);
+	}
+
+	
 	@SuppressWarnings("unchecked")
 	private List<PingData> getPingDataInPeriod(Date start, Date end) {
 		List<PingData> pingData = (List<PingData>) connection.execute(new GetAllPingDataTransaction(start, end));
