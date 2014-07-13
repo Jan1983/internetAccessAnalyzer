@@ -68,6 +68,7 @@ public class JobManager {
 
 	private void writeBackIntoDatabase() throws IOException {
 		DBConnection connection = new DBConnection();
+		connection.openEntityManager();
 		connection.execute(new WritePingDataTransaction(pingResult));
 		connection.closeEntityManager();
 	}

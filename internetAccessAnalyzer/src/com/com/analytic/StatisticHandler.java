@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -13,19 +12,20 @@ import org.apache.log4j.Logger;
 
 import com.database.DBConnection;
 import com.database.model.PingData;
-import com.database.transactions.GetAllPingDataTransaction;
 import com.logger.UseLogger;
 
 public class StatisticHandler {
 	private static final Logger log = LogManager.getLogger(StatisticHandler.class.getName());
 	private DBConnection connection;
-
+	private PingDataEvaluator evaluator;
+	
 	private enum Period {
 		ALL, YEAR, MONTH, DAY
 	}
 
 	public StatisticHandler() throws IOException {
 		connection = new DBConnection();
+		evaluator = new PingDataEvaluator(connection);
 	}
 
 	public static void main(String[] args) {
@@ -33,34 +33,39 @@ public class StatisticHandler {
 		try {
 			StatisticHandler handler = new StatisticHandler();
 			handler.start();
-		} catch (IOException e) {
+		} catch (IOException | ParseException e) {
 			log.error("", e);
 		}
 	}
-
-	private void start() {
-		connection.openEntityManager();
+	
+	private Date getExampleDate() throws ParseException {
 		DateFormat df = new SimpleDateFormat("dd.MM.yyyy");
-		Date date = null;
 
 		try {
-			date = df.parse("03.07.2014");
+			return df.parse("03.07.2014");
 		} catch (ParseException e) {
 			log.error("", e);
+			throw e;
 		}
-		;
+	}
+	
+	private Period getExamplePeriod() {
+		return Period.YEAR;
+	}
 
+	private void start() throws ParseException {
+		connection.openEntityManager();
+		Date date = getExampleDate(); 
 		try {
-			Period period = Period.YEAR;
-			switch (period) {
+			switch (getExamplePeriod()) {
 			case DAY:
-				log.info(getPingDataForDay(date).size());
+				printRatio(evaluator.getPingDataForDay(date));				
 				break;
 			case MONTH:
-				log.info(getPingDataForMonth(date).size());
+				printRatio(evaluator.getPingDataForMonth(date));
 				break;
 			case YEAR:
-				getPingDataForYear(date);
+				printRatio(evaluator.getPingDataForYear(date));
 				break;
 			case ALL:
 				break;
@@ -70,35 +75,9 @@ public class StatisticHandler {
 		}
 	}
 
-	private List<PingData> getPingDataForDay(Date day) {
-		Calendar c = Calendar.getInstance();
-		c.setTime(day);
-		c.add(Calendar.DATE, 1);
-		Date nextDay = c.getTime();
-		return getPingDataInPeriod(day, nextDay);
+	private void printRatio(List<PingData> data) {
+		log.info("Success: " + IOUtils.round(evaluator.getSuccessPingsInPercent(data)) + "%");
+		log.info("Failed:  " + IOUtils.round(evaluator.getFailedPingsInPercent(data)) + "%");
 	}
 
-	private List<PingData> getPingDataForMonth(Date month) {
-		Calendar c = Calendar.getInstance();
-		c.setTime(month);
-		c.add(Calendar.MONTH, 1);
-		Date nextDay = c.getTime();
-		return getPingDataInPeriod(month, nextDay);
-
-	}
-	
-	private List<PingData> getPingDataForYear(Date year) {
-		Calendar c = Calendar.getInstance();
-		c.setTime(year);
-		c.add(Calendar.YEAR, 1);
-		Date nextDay = c.getTime();
-		return getPingDataInPeriod(year, nextDay);
-	}
-
-	
-	@SuppressWarnings("unchecked")
-	private List<PingData> getPingDataInPeriod(Date start, Date end) {
-		List<PingData> pingData = (List<PingData>) connection.execute(new GetAllPingDataTransaction(start, end));
-		return pingData;
-	}
 }
